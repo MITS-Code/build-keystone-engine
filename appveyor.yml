@@ -1,0 +1,33 @@
+version: 1.0-{build}
+skip_tags: true
+os:
+  - Visual Studio 2015
+environment:
+    TIMESTAMP: x
+    matrix:
+        - PF: x64
+        - PF: x32
+before_build:
+  - if "%PF%" == "x32" (call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86)
+  - if "%PF%" == "x64" (call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64)
+build_script:
+  - git submodule update --init --recursive
+  - cd keystone
+  - mkdir build
+  - cd build
+  - ..\nmake-dll.bat
+  - ..\nmake-lib.bat
+after_build:
+  - mkdir keystone-windows-latest
+  - copy llvm\bin\keystone.dll keystone-windows-latest
+  - copy llvm\lib\keystone.lib keystone-windows-latest
+  - copy kstool\kstool.exe keystone-windows-latest
+  - 7z a keystone-windows-latest.zip keystone-windows-latest\*
+  - ps: $Env:TIMESTAMP = Get-Date -UFormat %d%m%y.%H%M
+artifacts:
+  - path: keystone\
+    name: Keystone.v%APPVEYOR_BUILD_VERSION%.%PF%
+deploy:
+- provider: GitHub
+  auth_token:
+    secure: 6PJOp+cW01YiibFnGYdI2nWHwuA5dDU1YaFQBZUNOrTcGAnklAh2Y0d6f2kuoyp/
